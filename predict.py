@@ -14,9 +14,11 @@ def main():
     if input_args.gpu and torch.cuda.is_available:
         device = 'cuda'     
     
+    model, class_from_index = load_checkpoint(checkpoint_path, device)
     model, in_features = get_pretrained_network(arch)    
     model = freeze_layers(model, arch)
-    model, class_from_index = load_checkpoint(model, checkpoint_path, device, arch)
+    #model, class_from_index = load_checkpoint(model, checkpoint_path, device)
+    
     
     
     

@@ -22,6 +22,8 @@ def main():
     hidden_units = input_args.hidden_units
     checkpoint_folder = input_args.save_dir 
     checkpoint_path = checkpoint_folder +'/checkpoint.pth'
+    batch_size = 128
+    testing_batch_size = 32
     
     data_dir = input_args.data_dir       
     train_dir = data_dir + '/train'
@@ -34,7 +36,7 @@ def main():
     
     logging.info('Using {} data'.format(data_dir))
     
-    image_datasets, dataloaders = get_data(train_dir, valid_dir, test_dir)
+    image_datasets, dataloaders = get_data(train_dir, valid_dir, test_dir, batch_size, testing_batch_size)
     
     class_to_index = image_datasets['training'].class_to_idx
     class_from_index = dict([val,key] for key,val in class_to_index.items())
@@ -49,7 +51,7 @@ def main():
     model = train_network(model, dataloaders, epochs, l_rate, device, optimizer)    
     logging.info('Training Finished...')
     create_folder(checkpoint_folder)
-    save_checkpoint(checkpoint_path, model,class_from_index)
+    save_checkpoint(checkpoint_path, model,class_from_index, hidden_units, l_rate, batch_size,testing_batch_size)
     
 if __name__ == "__main__":
     main()

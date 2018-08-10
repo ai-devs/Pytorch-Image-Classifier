@@ -2,6 +2,8 @@ import os
 from torchvision import transforms, datasets, models
 import torch
 import json, argparse
+from PIL import Image
+
 
 means = [0.485, 0.456, 0.406]
 std = [0.229, 0.224, 0.225]
@@ -10,7 +12,7 @@ def create_folder(checkpoint_folder):
     if not os.path.exists(checkpoint_folder):
         os.makedirs(checkpoint_folder)
     
-def get_data(train_dir, valid_dir, test_dir):
+def get_data(train_dir, valid_dir, test_dir, batch_size, testing_batch_size):
     data_transforms = {'training' : transforms.Compose([transforms.RandomResizedCrop(224),
                                                     transforms.RandomHorizontalFlip(),
                                                     transforms.RandomRotation(90),
@@ -33,9 +35,9 @@ def get_data(train_dir, valid_dir, test_dir):
                   'testing' : datasets.ImageFolder(test_dir,transform=data_transforms['testing'])
                  }
     # DONE: Using the image datasets and the trainforms, define the dataloaders
-    dataloaders = {'training' : torch.utils.data.DataLoader(image_datasets['training'],batch_size= 128, shuffle= True),
-               'validation' : torch.utils.data.DataLoader(image_datasets['validation'],batch_size= 32, shuffle= True),
-               'testing' : torch.utils.data.DataLoader(image_datasets['testing'],batch_size= 32, shuffle= True)
+    dataloaders = {'training' : torch.utils.data.DataLoader(image_datasets['training'],batch_size= batch_size, shuffle= True),
+               'validation' : torch.utils.data.DataLoader(image_datasets['validation'],batch_size= testing_batch_size, shuffle= True),
+               'testing' : torch.utils.data.DataLoader(image_datasets['testing'],batch_size= testing_batch_size, shuffle= True)
               }
     return image_datasets, dataloaders
   
@@ -65,3 +67,4 @@ def get_predict_input_args():
     parser.add_argument('--gpu',  help='Use GPU for training', action='store_true', default = False)    
     
     return parser.parse_args()
+

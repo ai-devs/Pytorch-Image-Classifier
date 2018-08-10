@@ -5,9 +5,9 @@ from torchvision import models
 import logging, sys
 
 from utils import * 
-    
-def get_pretrained_network(network):    
-    if network == 'densenet':
+
+def get_pretrained_network(arch):    
+    if arch == 'densenet':
         model = models.densenet161(pretrained=True)        
         in_features = model.classifier.in_features
 
@@ -15,7 +15,7 @@ def get_pretrained_network(network):
     #    model = models.vgg19(pretrained=True)
     #    in_features = model.classifier[6].in_features
 
-    elif network == 'resnet':
+    elif arch == 'resnet':
         model = models.resnet50(pretrained=True)
         in_features = model.fc.in_features
     else:
@@ -100,9 +100,12 @@ def validation(model,testloader,criterion,device):
         
     return test_loss, accuracy
 
-def save_checkpoint(checkpoint_path, model,class_from_index):
-    checkpoint = {'class_from_index' : class_from_index,
-                  'cat_to_name' : get_cat_to_name(),
+def save_checkpoint(checkpoint_path, model, class_from_index, hidden_units, learning_rate, batch_size, testing_batch_size):
+    checkpoint = {'class_from_index' : class_from_index,                                    
+                  'hidden_units' : hidden_units,
+                  'learning_rate' : learning_rate,
+                  'batch_size' : batch_size,
+                  'testing_batch_size' : testing_batch_size,
                  'state_dict' : model.state_dict()}
     torch.save(checkpoint, checkpoint_path)
     logging.info('Checkpoint saved')
@@ -157,13 +160,16 @@ def train_network(model, dataloaders, epochs, l_rate, device, optimizer):
                     model.train()    
     return model
   
-def load_checkpoint(model, checkpoint_path, device, arch):
+def load_checkpoint(checkpoint_path, device):
     # Load checkpoint
     checkpoint = torch.load(checkpoint_path)        
+    arch = checkpoint['arch']
+    hidden_units =  checkpoint['hidden_units']
     
     # Rebuild Model
-    classifier = create_classifier()
-    set_classifier(model,classifier, device, arch)
+    model, in_features = get_pretrained_network(arch)     
+    classifier = create_classifier(model, hidden_units, in_features)
+    model = set_classifier(model,classifier, device, arch)
     
     model.load_state_dict(checkpoint['state_dict'])
     class_from_index = checkpoint['class_from_index']
