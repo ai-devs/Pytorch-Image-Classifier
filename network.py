@@ -1,11 +1,13 @@
 from torch import nn, optim
+from torchvision import models
 import logging
-from utils import * 
+from utils import *
+import numpy as np
 
 
 def get_pretrained_network(arch):    
     if arch == 'densenet':
-        model = models.densenet161(pretrained=True)        
+        model = models.densenet161(pretrained=True)
         in_features = model.classifier.in_features
 
     # elif network == 'vgg':
@@ -61,16 +63,9 @@ def get_optimizer(arch, model, l_rate):
 
 
 def freeze_layers(model, arch):
-    if arch != 'resnet':
+    if arch == 'densenet':
         for param in model.parameters():
             param.requires_grad = False
-    else:
-        for child_name, child in model.named_children():
-            for param_name, params in child.named_parameters():
-                if param_name != 'fc':
-                    params.requires_grad = False  
-    
-    logging.info('Layers frozen')
     return model
 
 
@@ -103,13 +98,15 @@ def validation(model, testloader,criterion,device):
     return test_loss, accuracy
 
 
-def save_checkpoint(checkpoint_path, model, class_from_index, hidden_units, learning_rate, batch_size, testing_batch_size):
-    checkpoint = {'class_from_index' : class_from_index,                                    
-                  'hidden_units' : hidden_units,
-                  'learning_rate' : learning_rate,
-                  'batch_size' : batch_size,
-                  'testing_batch_size' : testing_batch_size,
-                  'state_dict' : model.state_dict()}
+def save_checkpoint(checkpoint_path, model, class_from_index, hidden_units,
+                    learning_rate, batch_size, testing_batch_size, arch):
+    checkpoint = {'class_from_index': class_from_index,
+                  'hidden_units': hidden_units,
+                  'learning_rate': learning_rate,
+                  'batch_size': batch_size,
+                  'testing_batch_size': testing_batch_size,
+                  'arch': arch,
+                  'state_dict': model.state_dict()}
     torch.save(checkpoint, checkpoint_path)
     logging.info('Checkpoint saved')
 
@@ -166,16 +163,76 @@ def train_network(model, dataloaders, epochs, device, optimizer):
 
 def load_checkpoint(checkpoint_path, device):
     # Load checkpoint
-    checkpoint = torch.load(checkpoint_path)        
+    checkpoint = torch.load(checkpoint_path)
     arch = checkpoint['arch']
     hidden_units = checkpoint['hidden_units']
-    
+
     # Rebuild Model
-    model, in_features = get_pretrained_network(arch)     
+    model, in_features = get_pretrained_network(arch)
     classifier = create_classifier(model, hidden_units, in_features)
-    model = set_classifier(model,classifier, device, arch)
-    
+    model = set_classifier(model, classifier, device, arch)
+
     model.load_state_dict(checkpoint['state_dict'])
     class_from_index = checkpoint['class_from_index']
-    
-    return model, class_from_index
+    logging.info('Checkpoint Loaded')
+    return model, class_from_index, arch
+
+
+def process_image(image):
+    ''' Scales, crops, and normalizes a PIL image for a PyTorch model,
+        returns an Numpy array
+    '''
+    img = Image.open(image)
+
+    transformations = transforms.Compose([transforms.Resize(256),
+                                          transforms.CenterCrop(224),
+                                          transforms.ToTensor(),
+                                          transforms.Normalize(means, std)])
+    img = transformations(img)
+
+    np_image = np.array(img)
+
+    return np_image
+
+
+def predict(image_path, model, device, cat_to_name, class_from_index,  topk=5):
+    ''' Predict the class (or classes) of an image using a trained deep learning model.
+    '''
+    image = process_image(image_path)
+    image = torch.from_numpy(image)
+    image = image.to(device)
+
+    model.eval()
+
+    image.unsqueeze_(0)
+
+    output = model.forward(image)
+
+    ps = torch.exp(output)
+
+    probs, classes = ps.topk(topk)
+    probs, classes = probs.cpu().detach().numpy(), classes.cpu().detach().numpy()
+
+    # Create labels with category names for the topK predictions
+    categories = [cat_to_name[class_from_index[idx]] for idx in classes[0]]
+
+    # Get true label
+    true_idx = image_path.split('/')[2]
+    #cat_to_name[class_from_index]
+    true_label = cat_to_name[true_idx]
+
+    predictions = zip(categories, probs.T)
+
+    print()
+    print('##############################')
+    print()
+    print('  TOP {} probabilities are:'.format(topk))
+    print()
+
+    for cat, pred in predictions:
+        print('  {}: {}%'.format(cat, round(pred.item() * 100,2)))
+    print()
+    print('  True label: {}'.format(true_label))
+    print()
+    print('##############################')
+    print()

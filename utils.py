@@ -21,12 +21,12 @@ def get_data(train_dir, valid_dir, test_dir, batch_size, testing_batch_size):
                                                     transforms.ToTensor(),
                                                     transforms.Normalize(means, std)]),
                    
-                   'validation' : transforms.Compose([transforms.Resize(225),
+                       'validation' : transforms.Compose([transforms.Resize(225),
                                                       transforms.CenterCrop(224),
                                                       transforms.ToTensor(),
                                                       transforms.Normalize(means, std)]),
                    
-                   'testing' : transforms.Compose([transforms.Resize(225),
+                       'testing' : transforms.Compose([transforms.Resize(225),
                                                    transforms.CenterCrop(224),
                                                    transforms.ToTensor(),
                                                    transforms.Normalize(means, std)])                                     

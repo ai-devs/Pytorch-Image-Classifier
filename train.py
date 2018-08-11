@@ -15,7 +15,7 @@ def main():
     hidden_units = input_args.hidden_units
     checkpoint_folder = input_args.save_dir 
     checkpoint_path = checkpoint_folder + '/checkpoint.pth'
-    batch_size = 128
+    batch_size = 64
     testing_batch_size = 32
     
     data_dir = input_args.data_dir       
@@ -35,16 +35,15 @@ def main():
     class_from_index = dict([val,key] for key,val in class_to_index.items())
     
     logging.info('datasets and loaders were loaded')    
-    model, in_features = get_pretrained_network(arch)    
-    if arch == 'densenet':
-        model = freeze_layers(model, arch)
+    model, in_features = get_pretrained_network(arch)
+    model = freeze_layers(model, arch)
     classifier = create_classifier(model, hidden_units, in_features)    
     model = set_classifier(model,classifier, device, arch)      
     optimizer = get_optimizer(arch,model,l_rate)
     model = train_network(model, dataloaders, epochs, device, optimizer)
     logging.info('Training Finished...')
     create_folder(checkpoint_folder)
-    save_checkpoint(checkpoint_path, model,class_from_index, hidden_units, l_rate, batch_size,testing_batch_size)
+    save_checkpoint(checkpoint_path, model,class_from_index, hidden_units, l_rate, batch_size,testing_batch_size, arch)
     
 if __name__ == "__main__":
     main()
