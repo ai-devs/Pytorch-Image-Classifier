@@ -123,41 +123,40 @@ def train_network(model, dataloaders, epochs, l_rate, device, optimizer):
     criterion = nn.CrossEntropyLoss()
     
 
-    from workspace_utils import active_session
+    #from workspace_utils import active_session
 
-    with active_session():
-        for epoch in range(epochs):
-            running_loss = 0    
-            model.train()
+    #with active_session():
+    for epoch in range(epochs):
+        running_loss = 0    
+        model.train()
 
-            for inputs, y in training_dataloader:                
-                #inputs = inputs.requires_grad_(False)
-                step += 1
-                optimizer.zero_grad()
-                inputs, y = inputs.to(device), y.to(device)
+        for inputs, y in training_dataloader:                
+            #inputs = inputs.requires_grad_(False)
+            step += 1
+            optimizer.zero_grad()
+            inputs, y = inputs.to(device), y.to(device)
 
-                y_hat = model.forward(inputs)
+            y_hat = model.forward(inputs)
+            loss = criterion(y_hat,y)
+            loss.backward()
 
-                loss = criterion(y_hat,y)
-                loss.backward()
+            optimizer.step()
 
-                optimizer.step()
+            running_loss += loss.item()
 
-                running_loss += loss.item()
+            if step %  print_every == 0:
+                model.eval()
 
-                if step %  print_every == 0:
-                    model.eval()
+                with torch.no_grad():
+                    test_loss, accuracy = validation(model,testing_dataloadar,criterion,device)
 
-                    with torch.no_grad():
-                        test_loss, accuracy = validation(model,testing_dataloadar,criterion,device)
+                print("Epoch: {}/{}... ".format(epoch+1, epochs),
+                      "Loss: {:.3f}".format(running_loss/print_every),
+                      "Test Loss: {:.3f}".format(test_loss/len(testing_dataloadar)),
+                      "Test Accuracy: {:.3f}".format(accuracy/len(testing_dataloadar)))
 
-                    print("Epoch: {}/{}... ".format(epoch+1, epochs),
-                          "Loss: {:.3f}".format(running_loss/print_every),
-                          "Test Loss: {:.3f}".format(test_loss/len(testing_dataloadar)),
-                          "Test Accuracy: {:.3f}".format(accuracy/len(testing_dataloadar)))
-
-                    running_loss = 0
-                    model.train()    
+                running_loss = 0
+                model.train()    
     return model
   
 def load_checkpoint(checkpoint_path, device):
