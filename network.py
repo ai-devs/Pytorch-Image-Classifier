@@ -111,7 +111,7 @@ def save_checkpoint(checkpoint_path, model, class_from_index, hidden_units,
     logging.info('Checkpoint saved')
 
 
-def train_network(model, dataloaders, epochs, device, optimizer):
+def train_network(model, dataloaders, epochs, device, optimizer, arch):
     # Train Network
     logging.info('Starting training...')
     print_every = 20
@@ -120,8 +120,10 @@ def train_network(model, dataloaders, epochs, device, optimizer):
     training_dataloader, validation_dataloader = dataloaders['training'],  dataloaders['validation']
     len_validation_data = len(validation_dataloader)
 
-    # criterion = nn.NLLLoss()
-    criterion = nn.CrossEntropyLoss()
+    if arch == 'densenet':
+        criterion = nn.NLLLoss()
+    else:
+        criterion = nn.CrossEntropyLoss()
 
     # from workspace_utils import active_session
 
@@ -209,6 +211,7 @@ def predict(image_path, model, device, cat_to_name, class_from_index,  topk=5):
     output = model.forward(image)
 
     ps = torch.exp(output)
+    #ps = output
 
     probs, classes = ps.topk(topk)
     probs, classes = probs.cpu().detach().numpy(), classes.cpu().detach().numpy()
@@ -220,7 +223,7 @@ def predict(image_path, model, device, cat_to_name, class_from_index,  topk=5):
     true_idx = image_path.split('/')[2]
     #cat_to_name[class_from_index]
     true_label = cat_to_name[true_idx]
-
+    print(sum(probs))
     predictions = zip(categories, probs.T)
 
     print()
@@ -230,7 +233,7 @@ def predict(image_path, model, device, cat_to_name, class_from_index,  topk=5):
     print()
 
     for cat, pred in predictions:
-        print('  {}: {}%'.format(cat, round(pred.item() * 100,2)))
+        print('  {}: {}%'.format(cat, round(pred.item(),2)))
     print()
     print('  True label: {}'.format(true_label))
     print()

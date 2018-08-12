@@ -40,7 +40,7 @@ def main():
     classifier = create_classifier(model, hidden_units, in_features)    
     model = set_classifier(model,classifier, device, arch)      
     optimizer = get_optimizer(arch,model,l_rate)
-    model = train_network(model, dataloaders, epochs, device, optimizer)
+    model = train_network(model, dataloaders, epochs, device, optimizer, arch)
     logging.info('Training Finished...')
     create_folder(checkpoint_folder)
     save_checkpoint(checkpoint_path, model,class_from_index, hidden_units, l_rate, batch_size,testing_batch_size, arch)
